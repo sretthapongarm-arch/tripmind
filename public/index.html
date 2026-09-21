@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TripMind – AI วางแผนเที่ยว</title>
+<style>
+:root{--bg:#f6f8f7;--card:#fff;--tx:#14231f;--mut:#5d6f69;--ac:#0f9d7a;--ac2:#e8f6f1;--bd:#dfe7e4;--warn:#b45309}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1715;--card:#17221f;--tx:#e8f1ee;--mut:#9bb0a9;--ac:#2fd0a4;--ac2:#163229;--bd:#26362f;--warn:#f0b35a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Noto Sans Thai",sans-serif;line-height:1.6}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px}
+header{text-align:center;padding:20px 0 4px}h1{margin:0}h1 span{color:var(--ac)}header p{color:var(--mut);margin:4px 0}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px;margin-top:16px}
+h2{margin:0 0 12px;font-size:1.15rem}
+label{display:block;font-weight:600;margin:0 0 6px;font-size:.9rem}
+input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.f{margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:7px 14px;border-radius:999px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer;font:inherit;font-size:.88rem}
+.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.spot{text-align:left;border-radius:12px;padding:10px 12px;max-width:100%}.spot small{display:block;opacity:.8}
+button.go{width:100%;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:inherit;font-weight:700;font-size:1rem;cursor:pointer}
+button.go:disabled{opacity:.6;cursor:wait}
+button.sec{padding:10px 14px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;cursor:pointer}
+.msg{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--ac2);font-size:.9rem}.msg.err{color:var(--warn)}
+.hide{display:none}.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.tag{display:inline-block;background:var(--ac2);color:var(--ac);padding:3px 12px;border-radius:999px;font-size:.82rem;font-weight:600;margin:4px 6px 0 0}
+.theme{color:var(--mut);margin:0}.wx{font-size:.88rem;color:var(--warn);margin:4px 0 8px}
+.stop{display:grid;grid-template-columns:56px 1fr;gap:10px;padding:10px 0;border-top:1px dashed var(--bd)}
+.time{color:var(--ac);font-weight:700;font-size:.9rem}.stop p{margin:2px 0;color:var(--mut);font-size:.88rem}
+.tr{font-size:.82rem}.cost{font-size:.82rem;color:var(--warn)}.stop a{color:var(--ac);font-size:.82rem;text-decoration:none}
+.hotel{border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:8px}.hotel p{margin:2px 0;color:var(--mut);font-size:.88rem}
+ul{margin:4px 0;padding-left:20px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Trip<span>Mind</span> ✈️</h1><p>AI จัดตารางเที่ยว ปรับตามอากาศและเวลาที่มี</p></header>
+
+<section class="card" id="s1">
+  <h2>1) 🗓️ ข้อมูลทริป</h2>
+  <div class="f"><label>จุดหมาย</label><input id="dest" placeholder="เช่น เชียงใหม่, โตเกียว, ลิสบอน"></div>
+  <div class="row">
+    <div class="f"><label>วันเริ่มเที่ยว</label><input type="date" id="start"></div>
+    <div class="f"><label>จำนวนวัน</label><select id="days"></select></div>
+    <div class="f"><label>💰 งบรวม (บาท)</label><input type="number" id="budget" value="15000" min="500" step="500"></div>
+  </div>
+  <div class="row">
+    <div class="f"><label>เที่ยวกับใคร</label><select id="who"><option>คนเดียว</option><option>คู่รัก</option><option>เพื่อน</option><option>ครอบครัว (มีเด็ก)</option><option>ครอบครัว (ผู้สูงอายุ)</option></select></div>
+    <div class="f"><label>จังหวะ</label><select id="pace"><option>ชิลๆ</option><option selected>สมดุล</option><option>แน่นๆ</option></select></div>
+    <div class="f"><label>เริ่มเที่ยว</label><input type="time" id="t1" value="09:00"></div>
+    <div class="f"><label>เลิกเที่ยว</label><input type="time" id="t2" value="20:00"></div>
+  </div>
+  <div class="f"><label>สไตล์ที่ชอบ</label><div class="chips" id="styles"></div></div>
+  <button class="go" id="findSpots">🔍 ค้นหาสถานที่ท่องเที่ยว</button>
+  <div class="msg hide" id="m1"></div>
+</section>
+
+<section class="card hide" id="s2">
+  <h2>2) 📍 เลือกสถานที่ที่สนใจ <small style="font-weight:400;color:var(--mut)">(ไม่เลือก = ให้ AI เลือกให้)</small></h2>
+  <div class="chips" id="spots" style="margin-bottom:14px"></div>
+  <button class="go" id="gen">🤖 จัดตารางเที่ยวให้อัตโนมัติ</button>
+  <div class="msg hide" id="m2"></div>
+</section>
+
+<section class="hide" id="s3">
+  <div class="card" id="sum"></div>
+  <div class="card"><div class="tabs" id="tabs"></div><div id="day"></div></div>
+  <div class="card"><h2>🏨 ที่พักแนะนำ</h2><div id="hotels"></div></div>
+  <div class="card"><h2>💡 เคล็ดลับ</h2><div id="tips"></div></div>
+  <div class="card">
+    <h2>🌦️ ปรับแผน</h2>
+    <div class="f"><textarea id="note" rows="2" placeholder="เช่น พรุ่งนี้ฝนตกหนัก / วันที่ 2 เหลือเวลาแค่ 4 ชั่วโมง / ขอลดงบลง 20%"></textarea></div>
+    <button class="go" id="adj">🔄 ให้ AI ปรับแผนใหม่</button>
+    <div class="msg hide" id="m3"></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px"><button class="sec" id="copy">📋 คัดลอกแผน</button><button class="sec" id="print">🖨️ พิมพ์ / PDF</button></div>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const STYLES=['🍜 อาหาร','🏛️ วัฒนธรรม','🌿 ธรรมชาติ','🏖️ ทะเล','🛍️ ช้อปปิ้ง','☕ คาเฟ่','🌃 ไนท์ไลฟ์','📸 ถ่ายรูป','🧘 พักผ่อน','🎢 ผจญภัย'];
+const styles=new Set(['🍜 อาหาร']),picked=new Set();
+let plan=null,cur=0,weather=null,spotList=[];
+$('days').innerHTML=Array.from({length:10},(_,i)=>`<option value="${i+1}"${i==2?' selected':''}>${i+1} วัน</option>`).join('');
+$('start').value=new Date(Date.now()+864e5*7).toISOString().slice(0,10);
+$('styles').innerHTML=STYLES.map(s=>`<button type="button" class="chip${styles.has(s)?' on':''}" data-s="${s}">${s}</button>`).join('');
+$('styles').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const s=b.dataset.s;styles.has(s)?styles.delete(s):styles.add(s);b.classList.toggle('on')};
+$('spots').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const s=b.dataset.s;picked.has(s)?picked.delete(s):picked.add(s);b.classList.toggle('on')};
+const note=(id,t,err)=>{const m=$(id);m.textContent=t;m.className='msg'+(err?' err':'')};
+
+async function api(body){
+  const r=await fetch('/api/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({error:'เซิร์ฟเวอร์ตอบผิดรูปแบบ'}));
+  if(!r.ok)throw new Error(d.error||'เกิดข้อผิดพลาด');return d;
+}
+const common=()=>({dest:$('dest').value.trim(),days:+$('days').value,startDate:$('start').value,budget:+$('budget').value,who:$('who').value,pace:$('pace').value,startTime:$('t1').value,endTime:$('t2').value,styles:[...styles],spots:[...picked],weather});
+
+// สภาพอากาศจาก Open-Meteo (ฟรี ไม่ต้องใช้ key) — พยากรณ์ได้ล่วงหน้าราว 16 วัน
+const WMO=c=>c==0?'แจ่มใส':c<4?'มีเมฆ':c<50?'หมอก':c<70?'ฝน':c<80?'หิมะ':c<90?'ฝนกระหน่ำ':'พายุฝนฟ้าคะนอง';
+async function getWeather(dest,start,days){
+  try{
+    const g=await(await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(dest)}&count=1&language=th`)).json();
+    const p=g.results?.[0];if(!p)return null;
+    const end=new Date(new Date(start).getTime()+864e5*(days-1)).toISOString().slice(0,10);
+    const w=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&daily=weathercode,temperature_2m_max,precipitation_probability_max&timezone=auto&start_date=${start}&end_date=${end}`)).json();
+    if(!w.daily)return null;
+    return w.daily.time.map((t,i)=>({date:t,sky:WMO(w.daily.weathercode[i]),maxC:w.daily.temperature_2m_max[i],rainPct:w.daily.precipitation_probability_max[i]}));
+  }catch(e){return null}
+}
+
+$('findSpots').onclick=async()=>{
+  const c=common();if(!c.dest)return note('m1','กรุณาใส่จุดหมายก่อน',1);
+  $('findSpots').disabled=true;note('m1','กำลังค้นหาสถานที่...');
+  try{
+    const d=await api({mode:'spots',dest:c.dest,styles:c.styles});
+    spotList=d.spots||[];picked.clear();
+    $('spots').innerHTML=spotList.map(s=>`<button type="button" class="chip spot" data-s="${esc(s.name)}"><b>${esc(s.name)}</b><small>${esc(s.category)} · ~${esc(s.hours)} ชม.</small></button>`).join('');
+    $('s2').classList.remove('hide');$('m1').className='msg hide';$('s2').scrollIntoView({behavior:'smooth'});
+  }catch(e){note('m1',e.message,1)}finally{$('findSpots').disabled=false}
+};
+
+async function run(mode,btn,msgId,extra={}){
+  const c=common();btn.disabled=true;note(msgId,'AI กำลังวางแผน... (10–40 วินาที)');
+  try{
+    if(mode==='plan'||!weather){weather=await getWeather(c.dest,c.startDate,c.days);c.weather=weather}
+    plan=await api({...c,mode,...extra});cur=0;render();
+    $(msgId).className='msg hide';$('s3').classList.remove('hide');$('s3').scrollIntoView({behavior:'smooth'});
+    if(!weather)note('m3','หมายเหตุ: ไม่มีพยากรณ์อากาศสำหรับช่วงวันที่นี้ (ดูได้ล่วงหน้าราว 16 วัน) แผนจึงไม่ได้ปรับตามอากาศอัตโนมัติ — พิมพ์สภาพอากาศเองในช่อง "ปรับแผน" ได้');
+  }catch(e){note(msgId,e.message,1)}finally{btn.disabled=false}
+}
+$('gen').onclick=()=>run('plan',$('gen'),'m2');
+$('adj').onclick=()=>{const n=$('note').value.trim();if(!n)return note('m3','พิมพ์สถานการณ์ที่ต้องการปรับก่อนนะ',1);run('adjust',$('adj'),'m3',{plan,note:n})};
+
+const map=(n)=>`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(n+' '+$('dest').value)}`;
+const ICON={attraction:'📍',food:'🍜',transport:'🚗',rest:'😴'};
+function render(){
+  const p=plan;
+  $('sum').innerHTML=`<h2 style="font-size:1.4rem">${esc(p.title)}</h2><div>${esc(p.summary)}</div><span class="tag">📅 ${p.days.length} วัน</span><span class="tag">💰 ประมาณ ${Number(p.totalCostTHB||0).toLocaleString()} / ${$('budget').value} บาท</span>`;
+  $('tabs').innerHTML=p.days.map((d,i)=>`<button class="chip${i===cur?' on':''}" data-i="${i}">วันที่ ${esc(d.day)}</button>`).join('');
+  const d=p.days[cur];
+  $('day').innerHTML=`<h2>${esc(d.theme)} <small style="color:var(--mut);font-weight:400">${esc(d.date)}</small></h2>${d.weatherNote?`<p class="wx">🌦️ ${esc(d.weatherNote)}</p>`:''}`+
+   d.stops.map(s=>`<div class="stop"><div class="time">${esc(s.time)}</div><div><b>${ICON[s.type]||'📍'} ${esc(s.name)}</b><p>${esc(s.desc)}</p>${s.transport?`<p class="tr">🚗 ${esc(s.transport)}</p>`:''}<span class="cost">฿${Number(s.costTHB||0).toLocaleString()}</span> ${s.type!=='transport'&&s.type!=='rest'?`<a href="${map(s.name)}" target="_blank" rel="noopener">เปิดแผนที่ ↗</a>`:''}</div></div>`).join('');
+  $('hotels').innerHTML=(p.hotels||[]).map(h=>`<div class="hotel"><b>${esc(h.name)}</b> · ${esc(h.area)} · ฿${Number(h.pricePerNightTHB||0).toLocaleString()}/คืน<p>${esc(h.why)}</p><a href="${map(h.name)}" target="_blank" rel="noopener" style="color:var(--ac);font-size:.82rem">เปิดแผนที่ ↗</a></div>`).join('');
+  $('tips').innerHTML=`<ul>${(p.tips||[]).map(t=>`<li>${esc(t)}</li>`).join('')}</ul><p style="font-size:.8rem;color:var(--mut)">⚠️ ข้อมูลและราคาเป็นการประเมินจาก AI กรุณาตรวจสอบก่อนเดินทาง</p>`;
+}
+$('tabs').onclick=e=>{const b=e.target.closest('.chip');if(b){cur=+b.dataset.i;render()}};
+$('copy').onclick=async()=>{const p=plan;const t=p.title+'\n'+p.days.map(d=>`\n== วันที่ ${d.day}: ${d.theme} ==\n`+d.stops.map(s=>`${s.time} ${s.name} – ${s.desc}`).join('\n')).join('\n');
+  try{await navigator.clipboard.writeText(t);note('m3','คัดลอกแล้ว ✅')}catch(e){note('m3','คัดลอกไม่สำเร็จ',1)}};
+$('print').onclick=()=>window.print();
+</script>
+</body>
+</html>
