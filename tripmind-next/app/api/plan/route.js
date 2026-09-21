@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 const hits = new Map();
 const LIMIT_PER_HOUR = 12;
+export const maxDuration = 60;
 
 const SCHEMA = `{"title":string,"summary":string,"totalCostTHB":number,
 "hotels":[{"name":string,"area":string,"pricePerNightTHB":number,"why":string}],
@@ -44,17 +45,28 @@ export async function POST(req) {
   if (!b.dest || String(b.dest).length > 80) return err('กรุณาระบุจุดหมายให้ถูกต้อง', 400);
   b.days = Math.min(Math.max(parseInt(b.days) || 3, 1), 10);
 
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  // ลองใหม่อัตโนมัติเมื่อ Google ไม่ว่าง (429/500/503) และสลับไปโมเดลสำรองถ้ามีตั้งไว้
+  const models = [process.env.GEMINI_MODEL || 'gemini-3.6-flash', process.env.GEMINI_FALLBACK_MODEL].filter(Boolean);
+  const body = JSON.stringify({ contents: [{ parts: [{ text: buildPrompt(b) }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.7 } });
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let lastMsg = 'เรียก AI ไม่สำเร็จ';
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt(b) }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.7 } })
-    });
-    const data = await r.json();
-    if (!r.ok) return err(data?.error?.message || 'เรียก AI ไม่สำเร็จ', 502);
-    const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
-    return NextResponse.json(JSON.parse(text.replace(/```json|```/g, '').trim()));
+    for (const model of models) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body
+        });
+        const data = await r.json().catch(() => ({}));
+        if (r.ok) {
+          const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+          return NextResponse.json(JSON.parse(text.replace(/```json|```/g, '').trim()));
+        }
+        lastMsg = data?.error?.message || lastMsg;
+        if (![429, 500, 503].includes(r.status)) return err(lastMsg, 502);
+        await sleep(1500 * (attempt + 1));
+      }
+    }
+    return err('ตอนนี้ AI คนใช้เยอะ ลองใหม่อีกครั้งในอีกสักครู่นะ', 503);
   } catch (e) {
     return err('AI ตอบกลับผิดรูปแบบ ลองใหม่อีกครั้ง', 500);
   }
