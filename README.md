@@ -1,31 +1,113 @@
-# TripMind – AI Tourism Itinerary Platform (MVP, ฟรี)
+# 🧭 TripMind
 
-ฟีเจอร์: เลือกสถานที่ · กำหนดวัน/งบ/เวลา · เส้นทางและการเดินทาง · ร้านอาหาร · ที่พัก · AI จัดตารางอัตโนมัติ · ปรับแผนตามอากาศ (Open-Meteo) หรือเวลาที่มี
+แพลตฟอร์มวางแผนเที่ยวด้วย AI (AI Tourism Itinerary Platform) กรอกปลายทาง จำนวนวัน งบ และสไตล์การเที่ยว แล้วได้แผนเที่ยวรายวันในไม่กี่วินาที
 
-## โครงสร้าง
-- `public/index.html` หน้าเว็บ (ไม่ต้อง build)
-- `api/plan.js` ฟังก์ชันหลังบ้าน เรียก Gemini โดยซ่อน API key
-- อากาศ: เรียก Open-Meteo จากเบราว์เซอร์ (ฟรี ไม่ต้องใช้ key)
+🌐 **Live Demo:** https://tripmind-nine.vercel.app
 
-## ขั้นตอน (ฟรีทั้งหมด)
-1. รับ API key ฟรี: https://aistudio.google.com/apikey
-2. อัปโหลดโฟลเดอร์นี้ขึ้น GitHub
-3. สมัคร https://vercel.com (Hobby ฟรี) → Add New Project → เลือก repo
-4. Settings → Environment Variables → เพิ่ม `GEMINI_API_KEY` → Deploy
-5. เปิด `https://ชื่อโปรเจกต์.vercel.app`
+📋 **เอกสารความต้องการ:** [MVP Requirements](./MVP_REQUIREMENTS.md)
 
-## ทดสอบในเครื่อง
+---
+
+## ✨ ฟีเจอร์หลัก (MVP)
+
+- กรอกข้อมูลทริป: ปลายทาง, จำนวนวัน, งบ, สไตล์การเที่ยว
+- สร้างแผนเที่ยวรายวันด้วย AI
+- ลองเรียก AI ซ้ำอัตโนมัติเมื่อเซิร์ฟเวอร์ไม่ว่าง และสลับไปใช้โมเดลสำรอง
+- บันทึกแผนขึ้น Cloud
+
+## 🛠️ ภาษาและเทคโนโลยีที่ใช้
+
+### ภาษา (Languages)
+
+| ภาษา | ใช้ทำอะไร |
+|---|---|
+| **JavaScript (ES6+)** | เขียนทั้งหน้าเว็บและ API (เช่น `app/api/plan/route.js`) |
+| **JSX** | เขียนส่วนติดต่อผู้ใช้ด้วย React |
+| **HTML / CSS** | โครงสร้างและหน้าตาของหน้าเว็บ |
+| **SQL** | สร้างและจัดการตารางฐานข้อมูลบน Supabase (PostgreSQL) |
+
+### เทคโนโลยี (Tech Stack)
+
+| ส่วน | เทคโนโลยี | หน้าที่ |
+|---|---|---|
+| Framework | [Next.js](https://nextjs.org) (App Router) | สร้างหน้าเว็บและ API route ในโปรเจกต์เดียว |
+| UI Library | [React](https://react.dev) | สร้างหน้าจอแบบ component |
+| Runtime | [Node.js](https://nodejs.org) | รันโค้ดฝั่งเซิร์ฟเวอร์ |
+| AI | [Google Gemini API](https://ai.google.dev) | สร้างแผนเที่ยวในรูปแบบ JSON |
+| Database | [Supabase](https://supabase.com) (PostgreSQL) | เก็บแผนที่ผู้ใช้บันทึก |
+| Hosting / Deploy | [Vercel](https://vercel.com) | โฮสต์เว็บและ deploy อัตโนมัติเมื่อ push ขึ้น GitHub |
+| Source Control | [GitHub](https://github.com) | เก็บโค้ดและเชื่อมกับ Vercel |
+
+> ทุกบริการที่ใช้อยู่ในโควตาฟรี (free tier) ในช่วงทดลอง
+
+## 🧩 สถาปัตยกรรมโดยย่อ
+
+```mermaid
+flowchart LR
+    U[ผู้ใช้] --> W[Next.js บน Vercel]
+    W --> A[/api/plan/]
+    A -->|retry x3| G[Gemini โมเดลหลัก]
+    A -.->|สำรอง| F[Gemini โมเดลสำรอง]
+    W --> S[(Supabase)]
 ```
-npm i -g vercel
-cp .env.example .env   # ใส่ GEMINI_API_KEY
-vercel dev
+
+## 📁 โครงสร้างโปรเจกต์
+
+```
+tripmind/
+└── tripmind-next/
+    ├── app/
+    │   ├── page.js            # หน้าเว็บหลัก
+    │   └── api/
+    │       └── plan/
+    │           └── route.js   # API สร้างแผนเที่ยว (เรียก Gemini)
+    ├── package.json
+    └── ...
 ```
 
-## หมายเหตุ
-- โควตา free tier ของ Gemini เปลี่ยนได้ ตรวจที่ AI Studio; เปลี่ยนโมเดลได้ด้วย env `GEMINI_MODEL`
-- มี rate limit 12 ครั้ง/ชม./IP ใน `api/plan.js` (ปรับได้)
-- พยากรณ์อากาศดูได้ล่วงหน้าราว 16 วัน
-- ข้อมูลจาก AI อาจคลาดเคลื่อน ควรตรวจสอบก่อนเดินทาง
+## 🚀 วิธีรันในเครื่อง
 
-## ต่อยอด
-บันทึกทริป (Supabase free) · ล็อกอิน · แผนที่ฝัง (Leaflet + OpenStreetMap) · แชร์ลิงก์แผน
+```bash
+# 1. โคลนโปรเจกต์
+git clone https://github.com/sretthapongarm-arch/tripmind.git
+cd tripmind/tripmind-next
+
+# 2. ติดตั้งแพ็กเกจ
+npm install
+
+# 3. สร้างไฟล์ .env.local แล้วใส่ค่าตามตารางด้านล่าง
+
+# 4. รันโหมดพัฒนา
+npm run dev
+```
+
+เปิด http://localhost:3000
+
+## 🔐 Environment Variables
+
+| ตัวแปร | ความหมาย |
+|---|---|
+| `GEMINI_API_KEY` | คีย์สำหรับเรียก Gemini API |
+| `GEMINI_MODEL` | ชื่อโมเดลหลัก (ตรวจชื่อล่าสุดใน [Google AI Studio](https://aistudio.google.com)) |
+| `GEMINI_FALLBACK_MODEL` | ชื่อโมเดลสำรองเมื่อโมเดลหลักไม่ว่าง |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL ของโปรเจกต์ Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key ของ Supabase |
+
+⚠️ ห้าม commit ไฟล์ `.env.local` หรือคีย์จริงลง GitHub
+
+## ☁️ การ Deploy
+
+เชื่อม repo นี้กับ Vercel แล้วตั้งค่า Environment Variables ในหน้า Settings → Environment Variables ทุกครั้งที่ push โค้ดใหม่ Vercel จะ deploy ให้อัตโนมัติ
+
+## 🗺️ Roadmap
+
+- [x] สร้างแผนเที่ยวด้วย AI
+- [x] Retry อัตโนมัติ + โมเดลสำรอง
+- [ ] บันทึกและเปิดดูแผนจาก Cloud (My Trips)
+- [ ] แชร์แผนด้วยลิงก์
+- [ ] ระบบล็อกอิน
+- [ ] แผนที่และลิงก์ Google Maps
+
+## 📄 License
+
+ยังไม่ระบุ
