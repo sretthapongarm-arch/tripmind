@@ -75,7 +75,7 @@ export default function Home() {
       </div>
       <div className="row">
         <div className="f"><label>เที่ยวกับใคร</label><select value={f.who} onChange={e => set('who', e.target.value)}>{['คนเดียว', 'คู่รัก', 'เพื่อน', 'ครอบครัว (มีเด็ก)', 'ครอบครัว (ผู้สูงอายุ)'].map(x => <option key={x}>{x}</option>)}</select></div>
-        <div className="f"><label>จังหวะ</label><select value={f.pace} onChange={e => set('pace', e.target.value)}>{['ชิลๆ', 'สมดุล', 'แน่นๆ'].map(x => <option key={x}>{x}</option>)}</select></div>
+        <div className="f"><label>ช่วงคนเยอะ-คนน้อย</label><select value={f.pace} onChange={e => set('pace', e.target.value)}>{['คนน้อย', 'ปานกลาง', 'คนเยอะ'].map(x => <option key={x}>{x}</option>)}</select></div>
         <div className="f"><label>เริ่มเที่ยว</label><input type="time" value={f.startTime} onChange={e => set('startTime', e.target.value)} /></div>
         <div className="f"><label>เลิกเที่ยว</label><input type="time" value={f.endTime} onChange={e => set('endTime', e.target.value)} /></div>
       </div>
