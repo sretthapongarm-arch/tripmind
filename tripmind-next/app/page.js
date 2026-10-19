@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import PlanView from '@/components/PlanView';
+import { supabaseClient } from '../lib/supabaseClient';
 
 const STYLES = ['🍜 อาหาร', '🏛️ วัฒนธรรม', '🌿 ธรรมชาติ', '🏖️ ทะเล', '🛍️ ช้อปปิ้ง', '☕ คาเฟ่', '🌃 ไนท์ไลฟ์', '📸 ถ่ายรูป', '🧘 พักผ่อน', '🎢 ผจญภัย'];
 const WMO = c => c == 0 ? 'แจ่มใส' : c < 4 ? 'มีเมฆ' : c < 50 ? 'หมอก' : c < 70 ? 'ฝน' : c < 80 ? 'หิมะ' : c < 90 ? 'ฝนกระหน่ำ' : 'พายุฝนฟ้าคะนอง';
@@ -58,13 +58,15 @@ export default function Home() {
       if (!w) say('m3', 'หมายเหตุ: ไม่มีพยากรณ์อากาศสำหรับช่วงวันที่นี้ (ดูได้ล่วงหน้าราว 16 วัน) พิมพ์สภาพอากาศเองในช่อง "ปรับแผน" ได้');
     } catch (e) { say(k, e.message, 1); } finally { setBusy(''); }
   }
-  async function save() {
-    setBusy('save'); say('m4', 'กำลังบันทึก...');
-    try { const d = await api('/api/trips', { dest: f.dest, budget: f.budget, data: plan }); setShareUrl(`${location.origin}/trip?id=${d.id}`); say('m4', 'บันทึกแล้ว ✅ คัดลอกลิงก์ด้านล่างเพื่อแชร์'); }
-    catch (e) { say('m4', e.message, 1); } finally { setBusy(''); }
+    async function logout() {
+    await supabaseClient.auth.signOut();
+    window.location.href = '/login';
   }
 
   return (<>
+        <div style={{ textAlign: 'right', marginBottom: 8 }}>
+      <button type="button" className="sec" onClick={logout}>🚪 ออกจากระบบ</button>
+    </div>
     <section className="card">
       <h2>1) 🗓️ ข้อมูลทริป</h2>
       <div className="f"><label>จุดหมาย</label><input value={f.dest} onChange={e => set('dest', e.target.value)} placeholder="เช่น เชียงใหม่, โตเกียว, ลิสบอน" /></div>
