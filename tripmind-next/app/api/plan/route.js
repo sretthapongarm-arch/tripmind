@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const hits = new Map();
-const LIMIT_PER_HOUR = 12;
+const LIMIT_PER_HOUR = 30;
 export const maxDuration = 60;
 
 const SCHEMA = `{"title":string,"summary":string,"totalCostTHB":number,
