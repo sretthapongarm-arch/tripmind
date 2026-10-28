@@ -46,7 +46,7 @@ export async function POST(req) {
   b.days = Math.min(Math.max(parseInt(b.days) || 3, 1), 10);
 
   // ลองใหม่อัตโนมัติเมื่อ Google ไม่ว่าง (429/500/503) และสลับไปโมเดลสำรองถ้ามีตั้งไว้
-  const models = [process.env.GEMINI_MODEL || 'gemini-3.6-flash', process.env.GEMINI_FALLBACK_MODEL].filter(Boolean);
+  const models = [process.env.GEMINI_MODEL || 'gemini-3.5-flash', process.env.GEMINI_FALLBACK_MODEL].filter(Boolean);
   const body = JSON.stringify({ contents: [{ parts: [{ text: buildPrompt(b) }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.7 } });
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   let lastMsg = 'เรียก AI ไม่สำเร็จ';
